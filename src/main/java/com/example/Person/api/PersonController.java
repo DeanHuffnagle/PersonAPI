@@ -2,9 +2,11 @@ package com.example.Person.api;
 
 import com.example.Person.model.Person;
 import com.example.Person.service.PersonService;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import javax.validation.Valid;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -21,7 +23,7 @@ public class PersonController {
     }
 
     @PostMapping
-    public void insertPerson(@RequestBody Person person) {
+    public void insertPerson(@Valid @NotNull @RequestBody Person person) {
      personService.insertPerson(person);
     }
 
@@ -41,7 +43,7 @@ public class PersonController {
     }
 
     @PutMapping(path = "{id}")
-    public  void updatePersonById(@PathVariable("id") UUID id, @RequestBody Person person) {
+    public  void updatePersonById(@PathVariable("id") UUID id, @Valid @NotNull @RequestBody Person person) {
          personService.updatePersonById(id, person);
     }
 
