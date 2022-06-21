@@ -1,60 +1,62 @@
 package com.example.Person.dao;
 
 import com.example.Person.model.Person;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
-import java.util.ArrayList;
+import java.sql.ResultSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 
-@Repository("realDao")
+@Repository("postgres")
 public class PersonDataAccessService implements PersonDao{
 
-    private static final List<Person> DB = new ArrayList<>();
+    private final JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    public PersonDataAccessService(JdbcTemplate jdbcTemplate) {
+        this.jdbcTemplate = jdbcTemplate;
+    }
 
     @Override
     public void insertPerson(UUID id, Person person) {
-        System.out.println("real Dao insert");
-        DB.add(new Person(id,person.getName()));
+        final String sqlStatement = "INSERT INTO person (id, name) VALUES (? , ?)";
+        jdbcTemplate.update(sqlStatement, id, person.getName());
     }
 
     @Override
     public List<Person> getAllPeople() {
-        System.out.println("real Dao get all");
-        return DB;
+        final String sqlStatement = "SELECT id, name FROM person";
+        return jdbcTemplate.query(sqlStatement, (resultSet, i ) -> {
+            UUID id = UUID.fromString(resultSet.getString("id"));
+            String name = resultSet.getString("name");
+            return new Person(id, name);
+        });
     }
 
     @Override
     public Optional<Person> selectPersonById(UUID id) {
-        System.out.println("real Dao select one");
-        return DB.stream().filter(person -> person.getId().equals(id)).findFirst();
+        final String sqlStatement = "SELECT id, name FROM person Where id = ?";
+        Person person =  jdbcTemplate.queryForObject(sqlStatement,  (resultSet, i ) -> {
+            UUID personId = UUID.fromString(resultSet.getString("id"));
+            String name = resultSet.getString("name");
+            return new Person(personId, name);
+        }, id);
+        return Optional.ofNullable(person);
     }
 
     @Override
     public int deletePersonById(UUID id) {
-        System.out.println("real Dao delete");
-        Optional<Person> person = selectPersonById(id);
-        if (person.isEmpty()) {
-            return 0;
-        }
-        DB.remove(person.get());
-        return 1;
-
+        final String sqlStatement = "DELETE FROM person WHERE id = ?";
+        return jdbcTemplate.update(sqlStatement, id);
     }
 
     @Override
     public void updatePersonById(UUID id, Person person ) {
-        System.out.println("real Dao update");
-        selectPersonById(id)
-                .map(p -> {
-                    int indexOfPerson = DB.indexOf(p);
-                    if (indexOfPerson >= 0) {
-                        DB.set(indexOfPerson, new Person(p.getId(), person.getName()));
-                        return 1;
-                    }
-                    return 0;
-                });
+        final String sqlStatement = "UPDATE person SET name = ? WHERE id = ?";
+        jdbcTemplate.update(sqlStatement, person.getName(), id);
     }
 }
